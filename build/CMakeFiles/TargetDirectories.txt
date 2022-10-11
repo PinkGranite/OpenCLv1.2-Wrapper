@@ -1,0 +1,3 @@
+/data/yyw/code_repo/OpenCLv1.2-Wrapper/build/CMakeFiles/simulator.dir
+/data/yyw/code_repo/OpenCLv1.2-Wrapper/build/CMakeFiles/edit_cache.dir
+/data/yyw/code_repo/OpenCLv1.2-Wrapper/build/CMakeFiles/rebuild_cache.dir

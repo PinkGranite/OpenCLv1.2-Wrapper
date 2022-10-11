@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic CMakeFiles/simulator.dir/template.cpp.o CMakeFiles/simulator.dir/utils/envRela.cpp.o CMakeFiles/simulator.dir/utils/mm.cpp.o CMakeFiles/simulator.dir/utils/pgAndKernel.cpp.o -o simulator  -lOpenCL 

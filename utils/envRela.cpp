@@ -58,21 +58,57 @@ void Context::initPlatform() {
 
 void Context::initDevices(cl_platform_id platform, cl_device_id *devices, int deviceType, int num_device) {
     cl_uint num;
-    clGetDeviceIDs(platform, deviceType, 0, NULL, &num);
-    std::cout << "There totally " << num << " device of specific type (default GPU)" << std::endl;
-    if (num < num_device)
+    uint types[5] = {CL_DEVICE_TYPE_CPU, 
+                     CL_DEVICE_TYPE_ACCELERATOR, CL_DEVICE_TYPE_CUSTOM, 
+                     CL_DEVICE_TYPE_DEFAULT,  CL_DEVICE_TYPE_ALL};
+    std::cout << "Init platform related device......" << std::endl;
+    cl_int ret = clGetDeviceIDs(platform, deviceType, 0, NULL, &num);
+    int i = 0;
+    while (ret == CL_DEVICE_NOT_FOUND && i < 5)
     {
-        std::cerr << "There are not enough devices to use" << std::endl;
-        exit(-1);
+        ret = clGetDeviceIDs(platform, types[i], 0, NULL, &num);
+        ++i;
     }
-    cl_int err;
-    err = clGetDeviceIDs(platform, deviceType, num_device, devices, NULL);
-    if (err != CL_SUCCESS)
+    if (i == 5 && ret == CL_DEVICE_NOT_FOUND)
     {
-        std::cerr << "Error when getting devices" << std::endl;
-        std::cerr << "Error code: " << err << std::endl;
+        std::cerr << "Error when finding device." << std::endl;
         exit(-1);
-    }   
+    } else {
+        if (i == 0)  // GPU
+        {
+            std::cout << "There totally " << num << " device of specific type (GPU)" << std::endl;
+            if (num < num_device)
+            {
+                std::cerr << "There are not enough devices to use" << std::endl;
+                exit(-1);
+            }
+            cl_int err;
+            err = clGetDeviceIDs(platform, deviceType, num_device, devices, NULL);
+            if (err != CL_SUCCESS)
+            {
+                std::cerr << "Error when getting devices" << std::endl;
+                std::cerr << "Error code: " << err << std::endl;
+                exit(-1);
+            }
+        } else  // other device type
+        {
+            --i;
+            std::cout << "There totally " << num << " device of specific type " << i << std::endl;
+            if (num < num_device)
+            {
+                std::cerr << "There are not enough devices to use" << std::endl;
+                exit(-1);
+            }
+            cl_int err;
+            err = clGetDeviceIDs(platform, types[i], num_device, devices, NULL);
+            if (err != CL_SUCCESS)
+            {
+                std::cerr << "Error when getting devices" << std::endl;
+                std::cerr << "Error code: " << err << std::endl;
+                exit(-1);
+            }
+        }
+    }
 }
 
 void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data) {

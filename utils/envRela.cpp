@@ -63,6 +63,22 @@ void Context::initDevices(cl_platform_id platform, cl_device_id *devices, int de
                      CL_DEVICE_TYPE_DEFAULT,  CL_DEVICE_TYPE_ALL};
     std::cout << "Init platform related device......" << std::endl;
     cl_int ret = clGetDeviceIDs(platform, deviceType, 0, NULL, &num);
+    if (ret == CL_INVALID_PLATFORM)
+    {
+        std::cerr << "Using invalid platform when getting device." << std::endl;
+        std::cout << "Error code: " << ret << std::endl;
+        exit(-1);
+    } else if (ret == CL_OUT_OF_RESOURCES)
+    {
+        std::cerr << "There is a failure to allocate resources required by the OpenCL implementation on the device" << std::endl;
+        std::cout << "Error code: " << ret << std::endl;
+        exit(-1);
+    } else if (ret == CL_OUT_OF_HOST_MEMORY)
+    {
+        std::cerr << "There is a failure to allocate resources required by the OpenCL implementation on the host" << std::endl;
+        std::cout << "Error code: " << ret << std::endl;
+        exit(-1);
+    }
     int i = 0;
     while (ret == CL_DEVICE_NOT_FOUND && i < 5)
     {

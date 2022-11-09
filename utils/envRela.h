@@ -72,6 +72,7 @@ public:
 private:
     void initPlatform();
     void initDevices(cl_platform_id, cl_device_id *, int, int);
+    void getDeviceMessages(cl_device_id *);
     void createContext(cl_device_id *, int);
     void initMemoryController(cl_context);
     cl_platform_id platform;

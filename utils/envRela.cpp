@@ -58,11 +58,33 @@ void Context::initPlatform() {
 
 void Context::initDevices(cl_platform_id platform, cl_device_id *devices, int deviceType, int num_device) {
     cl_uint num;
-    uint types[5] = {CL_DEVICE_TYPE_CPU, 
+    uint types[5] = {CL_DEVICE_TYPE_DEFAULT, CL_DEVICE_TYPE_CPU, 
                      CL_DEVICE_TYPE_ACCELERATOR, CL_DEVICE_TYPE_CUSTOM, 
-                     CL_DEVICE_TYPE_DEFAULT,  CL_DEVICE_TYPE_ALL};
-    std::cout << "Init platform related device......" << std::endl;
+                     CL_DEVICE_TYPE_ALL};
+    std::cout << "Init platform related device (default device type is GPU)......" << std::endl;
     cl_int ret = clGetDeviceIDs(platform, deviceType, 0, NULL, &num);
+    if (ret == CL_SUCCESS)
+    {
+        std::cout << "There totally " << num << " device of specific type" << std::endl;
+        if (num < num_device)
+        {
+            std::cerr << "There are not enough devices (required " << num_device << " devices) to use" << std::endl;
+            exit(-1);
+        }
+        ret = clGetDeviceIDs(platform, deviceType, num_device, devices, NULL);
+        if (ret != CL_SUCCESS)
+        {
+            std::cerr << "Error when getting devices" << std::endl;
+            std::cerr << "Error code: " << ret << std::endl;
+            exit(-1);
+        }
+        std::cout << "Successfully getting devices." << std::endl;
+        std::cout << "Device message: " << std::endl;
+        for (size_t i = 0; i < num_device; i++)
+        {
+            getDeviceMessages(devices+i);
+        }
+    }
     if (ret == CL_INVALID_PLATFORM)
     {
         std::cerr << "Using invalid platform when getting device." << std::endl;
@@ -78,53 +100,72 @@ void Context::initDevices(cl_platform_id platform, cl_device_id *devices, int de
         std::cerr << "There is a failure to allocate resources required by the OpenCL implementation on the host" << std::endl;
         std::cout << "Error code: " << ret << std::endl;
         exit(-1);
-    }
-    int i = 0;
-    while (ret == CL_DEVICE_NOT_FOUND && i < 5)
+    } else if (ret == CL_DEVICE_NOT_FOUND)
     {
-        ret = clGetDeviceIDs(platform, types[i], 0, NULL, &num);
-        ++i;
-    }
-    if (i == 5 && ret == CL_DEVICE_NOT_FOUND)
-    {
-        std::cerr << "Error when finding device." << std::endl;
-        exit(-1);
-    } else {
-        if (i == 0)  // GPU
+        while (true)
         {
-            std::cout << "There totally " << num << " device of specific type (GPU)" << std::endl;
-            if (num < num_device)
+            std::cout << "There is no GPU in the platform." << std::endl;
+            std::cout << "Please select a type of device to use: " << std::endl;
+            std::cout << "     1. CL_DEVICE_TYPE_DEFAULT" << std::endl;
+            std::cout << "     2. CL_DEVICE_TYPE_CPU" << std::endl;
+            std::cout << "     3. CL_DEVICE_TYPE_ACCELERATOR" << std::endl;
+            std::cout << "     4. CL_DEVICE_TYPE_CUSTOM" << std::endl;
+            std::cout << "     5. CL_DEVICE_TYPE_ALL" << std::endl;
+            std::cout << "(Waiting your choice): " << std::endl;
+            int id = 0;
+            while (true)
             {
-                std::cerr << "There are not enough devices to use" << std::endl;
-                exit(-1);
+                std::cin >> id;
+                if (id > 5 || id < 1)
+                {
+                    std::cout << "Wrong Input!! Try again: ";
+                    continue;
+                }
+                break;
             }
-            cl_int err;
-            err = clGetDeviceIDs(platform, deviceType, num_device, devices, NULL);
-            if (err != CL_SUCCESS)
+            --id;
+            ret = clGetDeviceIDs(platform, types[id], 0, NULL, &num);
+            if (ret == CL_SUCCESS)
             {
-                std::cerr << "Error when getting devices" << std::endl;
-                std::cerr << "Error code: " << err << std::endl;
-                exit(-1);
+                break;
             }
-        } else  // other device type
+            std::cout << "No this type of device, chose again." << std::endl;
+        }
+        std::cout << "There totally " << num << " device of specific type" << std::endl;
+        if (num < num_device)
         {
-            --i;
-            std::cout << "There totally " << num << " device of specific type " << i << std::endl;
-            if (num < num_device)
-            {
-                std::cerr << "There are not enough devices to use" << std::endl;
-                exit(-1);
-            }
-            cl_int err;
-            err = clGetDeviceIDs(platform, types[i], num_device, devices, NULL);
-            if (err != CL_SUCCESS)
-            {
-                std::cerr << "Error when getting devices" << std::endl;
-                std::cerr << "Error code: " << err << std::endl;
-                exit(-1);
-            }
+            std::cerr << "There are not enough devices (required " << num_device << " devices) to use" << std::endl;
+            exit(-1);
+        }
+        ret = clGetDeviceIDs(platform, deviceType, num_device, devices, NULL);
+        if (ret != CL_SUCCESS)
+        {
+            std::cerr << "Error when getting devices" << std::endl;
+            std::cerr << "Error code: " << ret << std::endl;
+            exit(-1);
+        }
+        std::cout << "Successfully getting devices." << std::endl;
+        std::cout << "Device message: " << std::endl;
+        for (size_t i = 0; i < num_device; i++)
+        {
+            getDeviceMessages(devices+i);
         }
     }
+    std::cout << "=================================================" << std::endl;
+}
+
+void Context::getDeviceMessages(cl_device_id *device) {
+    char nameBuffer[1024];
+    bool available[1];
+    cl_device_exec_capabilities cap[1];
+    clGetDeviceInfo(*device, CL_DEVICE_NAME, sizeof(nameBuffer), (void *)nameBuffer, NULL);
+    std::cout << "     Device name: " << nameBuffer << std::endl;
+    clGetDeviceInfo(*device, CL_DEVICE_AVAILABLE, sizeof(available), (void *)available, NULL);
+    std::cout << "     Is device available? " << available[0] << " (do not depend on this)" << std::endl;
+    clGetDeviceInfo(*device, CL_DEVICE_COMPILER_AVAILABLE, sizeof(available), (void *)available, NULL);
+    std::cout << "     Weather device support program compile? " << available[0] << " (do not depend on this)" << std::endl;
+    clGetDeviceInfo(*device, CL_DEVICE_EXECUTION_CAPABILITIES, sizeof(cap), (void *)cap, NULL);
+    std::cout << "     The execution capabilities of the device: " << cap[0] << " (do not depend on this)" << std::endl;
 }
 
 void pfn_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data) {
